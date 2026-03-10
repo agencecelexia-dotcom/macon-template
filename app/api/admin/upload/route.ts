@@ -5,13 +5,13 @@ import { cookies } from "next/headers";
 
 const ADMIN_TOKEN = "macon-admin-session-v1";
 
-function isAuthed(cookieStore: ReturnType<typeof cookies>) {
+async function isAuthed() {
+  const cookieStore = await cookies();
   return cookieStore.get("admin_auth")?.value === ADMIN_TOKEN;
 }
 
 export async function POST(request: NextRequest) {
-  const cookieStore = cookies();
-  if (!isAuthed(cookieStore)) {
+if (!(await isAuthed())) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
