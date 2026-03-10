@@ -53,11 +53,10 @@ export default function MentionsLegalesPage() {
                     <strong>Email :</strong> {company.email}
                   </li>
                   <li>
-                    <strong>SIRET :</strong> 123 456 789 00012
+                    <strong>SIRET :</strong> Disponible sur demande
                   </li>
                   <li>
-                    <strong>Directeur de la publication :</strong> Philippe
-                    Durand
+                    <strong>Directeur de la publication :</strong> Le dirigeant de {company.name}
                   </li>
                 </ul>
               </div>
@@ -213,7 +212,7 @@ export default function MentionsLegalesPage() {
           </div>
 
           {/* CGU */}
-          <div className="space-y-6">
+          <div className="space-y-6 mb-16">
             <h2 className="text-2xl font-bold text-primary">
               3. Conditions Générales d&apos;Utilisation
             </h2>
@@ -237,7 +236,7 @@ export default function MentionsLegalesPage() {
                 <p>
                   L&apos;accès au site est gratuit. Les frais de connexion à
                   Internet sont à la charge de l&apos;utilisateur.{" "}
-                  {company.name} met tout en œuvre pour assurer
+                  {company.name} met tout en oeuvre pour assurer
                   l&apos;accessibilité du site 24h/24 et 7j/7, mais ne peut
                   garantir une disponibilité sans interruption.
                 </p>
@@ -281,8 +280,51 @@ export default function MentionsLegalesPage() {
 
               <div className="pt-6 border-t border-neutral-200">
                 <p className="text-sm text-neutral-400">
-                  Dernière mise à jour : février 2026
+                  Dernière mise à jour : mars 2026
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Crédit Agence Celexia */}
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-primary">
+              4. Conception du site
+            </h2>
+
+            <div className="space-y-4 text-neutral-600">
+              <div>
+                <h3 className="font-semibold text-primary mb-2">
+                  Création et développement
+                </h3>
+                <p>
+                  Ce site a été conçu et développé par{" "}
+                  <strong>Agence Celexia</strong>, agence web spécialisée dans
+                  la création de sites internet pour les artisans et
+                  professionnels du bâtiment.
+                </p>
+                <ul className="mt-2 space-y-1 text-sm">
+                  <li>
+                    <strong>Site web :</strong>{" "}
+                    <a
+                      href="https://agencecelexia.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent hover:underline"
+                    >
+                      agencecelexia.com
+                    </a>
+                  </li>
+                  <li>
+                    <strong>Email :</strong>{" "}
+                    <a
+                      href="mailto:contact@agencecelexia.com"
+                      className="text-accent hover:underline"
+                    >
+                      contact@agencecelexia.com
+                    </a>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
