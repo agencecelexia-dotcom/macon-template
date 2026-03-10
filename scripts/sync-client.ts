@@ -1,6 +1,9 @@
 /**
- * sync-client.ts — Template Macon
- * Lit CLIENT.md et genere lib/config/client.config.ts
+ * sync-client.ts -- Template Macon
+ * Lit CLIENT.md et genere:
+ *   - lib/config/client.config.ts
+ *   - lib/data/company.ts
+ *   - Remplace les metadonnees dans app/layout.tsx
  * Usage: npm run sync-client
  */
 
@@ -9,100 +12,235 @@ import * as path from "path";
 
 const ROOT = path.resolve(__dirname, "..");
 const CLIENT_MD = path.join(ROOT, "CLIENT.md");
-const OUTPUT = path.join(ROOT, "lib", "config", "client.config.ts");
 
 function extractNumber(s: string): number {
-  const match = s.match(/[\\d.]+/);
-  return match ? Number(match[0]) : 0;
+  const m = s.match(/[\d.]+/);
+  return m ? Number(m[0]) : 0;
 }
 
-function phoneToHref(phone: string): string {
-  const digits = phone.replace(/\\s+/g, "");
-  if (digits.startsWith("0")) return "tel:+33" + digits.slice(1);
-  return "tel:" + digits;
+function phoneToRaw(phone: string): string {
+  const digits = phone.replace(/\s+/g, "");
+  if (digits.startsWith("0")) return "+33" + digits.slice(1);
+  return digits;
 }
 
 function esc(s: string): string {
-  return s.replace(/\\\\/g, "\\\\").replace(/"/g, '\\"');
+  return s.split("\\").join("\\\\").split('"').join('\\"');
 }
 
-function main() {
-  if (!fs.existsSync(CLIENT_MD)) {
-    console.warn("CLIENT.md introuvable - conserve config existante.");
-    if (fs.existsSync(OUTPUT)) {
-      console.log("client.config.ts existant conserve.");
-    }
-    process.exit(0);
-  }
-
-  const content = fs.readFileSync(CLIENT_MD, "utf-8");
-  const rawLines = content.split(/\r?\n/);
+function parseClientMd(content: string): Map<string, string> {
   const vars = new Map<string, string>();
-
-  for (const line of rawLines) {
+  for (const line of content.split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
     const match = trimmed.match(/^([A-Z_0-9]+):\s*"(.*)"$/);
     if (match) vars.set(match[1], match[2]);
   }
+  return vars;
+}
 
+function replaceInFile(filePath: string, replacements: [string, string][]) {
+  if (!fs.existsSync(filePath)) return;
+  let content = fs.readFileSync(filePath, "utf-8");
+  let changed = false;
+  for (const [from, to] of replacements) {
+    if (content.includes(from)) {
+      content = content.split(from).join(to);
+      changed = true;
+    }
+  }
+  if (changed) {
+    fs.writeFileSync(filePath, content, "utf-8");
+    console.log("  Updated: " + path.relative(ROOT, filePath));
+  }
+}
+
+function walkFiles(dir: string, ext: string[]): string[] {
+  const results: string[] = [];
+  if (!fs.existsSync(dir)) return results;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory() && !entry.name.startsWith(".") && entry.name !== "node_modules") {
+      results.push(...walkFiles(fullPath, ext));
+    } else if (entry.isFile() && ext.some(e => entry.name.endsWith(e))) {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+
+function main() {
+  if (!fs.existsSync(CLIENT_MD)) {
+    console.warn("CLIENT.md introuvable - config conservee.");
+    process.exit(0);
+  }
+
+  const content = fs.readFileSync(CLIENT_MD, "utf-8");
+  const vars = parseClientMd(content);
   console.log("CLIENT.md lu (" + vars.size + " variables)");
+  const get = (key: string, fb = "") => vars.get(key) || fb;
 
-  const get = (key: string) => vars.get(key) ?? "";
+  const phone = get("TELEPHONE", "01 00 00 00 00");
+  const phoneRaw = phoneToRaw(phone);
+  const anneeCreation = extractNumber(get("ANNEE_CREATION", "2010")) || 2010;
+  const anneesExp = extractNumber(get("ANNEES_EXPERIENCE", "15")) || 15;
+  const nbInterventions = extractNumber(get("NOMBRE_INTERVENTIONS", "200")) || 200;
+  const nbAvis = extractNumber(get("NOMBRE_AVIS", "47")) || 47;
+  const noteGoogle = extractNumber(get("NOTE_GOOGLE", "4.8")) || 4.8;
+  const taux = extractNumber(get("TAUX_SATISFACTION", "98")) || 98;
+  const nbSatisfaits = Math.round(nbInterventions * taux / 100);
+  const nom = get("NOM_ENTREPRISE", "Mon Entreprise");
+  const ville = get("VILLE", "Paris");
+  const region = get("REGION", "Ile-de-France");
+  const cp = get("CODE_POSTAL", "75001");
+  const email = get("EMAIL", "contact@example.fr");
+  const adresse = get("ADRESSE", "1 Rue Exemple");
+  const lat = extractNumber(get("LATITUDE", "48.8566")) || 48.8566;
+  const lng = extractNumber(get("LONGITUDE", "2.3522")) || 2.3522;
+  const slogan = get("SLOGAN", "Votre artisan de confiance");
 
-  const telephone = get("TELEPHONE");
-  const telephoneHref = phoneToHref(telephone);
-  const anneesExperience = extractNumber(get("ANNEES_EXPERIENCE")) || 15;
-  const nombreInterventions = extractNumber(get("NOMBRE_INTERVENTIONS")) || 500;
-  const noteGoogle = extractNumber(get("NOTE_GOOGLE")) || 4.8;
-  const nombreAvis = extractNumber(get("NOMBRE_AVIS")) || 45;
-  const tauxSatisfaction = get("TAUX_SATISFACTION").replace(/%/g, "").trim() || "98";
-  const anneeCreation = extractNumber(get("ANNEE_CREATION")) || 2010;
+  // 1. Generate lib/config/client.config.ts
+  const configDir = path.join(ROOT, "lib", "config");
+  if (!fs.existsSync(configDir)) fs.mkdirSync(configDir, { recursive: true });
+  const configLines = [
+    "// Auto-generated by sync-client.ts -- DO NOT EDIT",
+    "// Edit CLIENT.md then run: npm run sync-client",
+    "",
+    "export const clientConfig = {",
+    "  identity: {",
+    `    prenomDirigeant: "${esc(get("PRENOM_DIRIGEANT", "Prenom"))}",`,
+    `    nomDirigeant: "${esc(get("NOM_DIRIGEANT", "Nom"))}",`,
+    `    nomEntreprise: "${esc(nom)}",`,
+    `    slogan: "${esc(slogan)}",`,
+    "  },",
+    "  contact: {",
+    `    telephone: "${esc(phone)}",`,
+    `    telephoneRaw: "${phoneRaw}",`,
+    `    email: "${esc(email)}",`,
+    `    rue: "${esc(adresse)}",`,
+    `    ville: "${esc(ville)}",`,
+    `    codePostal: "${esc(cp)}",`,
+    `    region: "${esc(region)}",`,
+    "  },",
+    "  coordinates: {",
+    `    lat: ${lat},`,
+    `    lng: ${lng},`,
+    "  },",
+    "  horaires: {",
+    `    display: "Lun-Ven : ${esc(get("HORAIRES_SEMAINE", "8h-18h"))} | Sam : ${esc(get("HORAIRES_SAMEDI", "9h-12h"))}",`,
+    "  },",
+    "  chiffres: {",
+    `    anneeCreation: ${anneeCreation},`,
+    `    anneesExperience: ${anneesExp},`,
+    `    projetsRealises: ${nbInterventions},`,
+    `    clientsSatisfaits: ${nbSatisfaits},`,
+    "  },",
+    "  google: {",
+    `    rating: ${noteGoogle},`,
+    `    reviewCount: ${nbAvis},`,
+    "  },",
+    "  socialMedia: {",
+    `    facebook: "${esc(get("FACEBOOK_URL"))}",`,
+    `    instagram: "${esc(get("INSTAGRAM_URL"))}",`,
+    `    google: "${esc(get("GOOGLE_REVIEWS_URL") || get("GOOGLE_URL"))}",`,
+    "  },",
+    "  seo: {",
+    `    rayonIntervention: "${esc(get("ZONE_KM", "30-50"))} km",`,
+    '    certifications: ["Garantie Decennale", "RGE", "Qualibat"],',
+    '    assurance: "Assurance decennale et responsabilite civile professionnelle",',
+    "  },",
+    "} as const;",
+  ];
+  fs.writeFileSync(path.join(configDir, "client.config.ts"), configLines.join("\n") + "\n", "utf-8");
+  console.log("lib/config/client.config.ts genere");
 
-  const out: string[] = [];
-  out.push("// FICHIER AUTO-GENERE - ne pas modifier manuellement");
-  out.push("// Modifie CLIENT.md puis relance : npm run sync-client");
-  out.push("");
-  out.push("export const clientConfig = {");
-  out.push('  NOM_ENTREPRISE: "' + esc(get("NOM_ENTREPRISE")) + '",');
-  out.push('  NOM_DIRIGEANT: "' + esc(get("NOM_DIRIGEANT")) + '",');
-  out.push('  PRENOM_DIRIGEANT: "' + esc(get("PRENOM_DIRIGEANT")) + '",');
-  out.push('  GENRE_DIRIGEANT: "' + esc(get("GENRE_DIRIGEANT") || "masculin") + '",');
-  out.push('  TELEPHONE: "' + esc(telephone) + '",');
-  out.push('  TELEPHONE_HREF: "' + esc(telephoneHref) + '",');
-  out.push('  EMAIL: "' + esc(get("EMAIL")) + '",');
-  out.push('  ADRESSE: "' + esc(get("ADRESSE")) + '",');
-  out.push('  VILLE: "' + esc(get("VILLE")) + '",');
-  out.push('  CODE_POSTAL: "' + esc(get("CODE_POSTAL")) + '",');
-  out.push('  DEPARTEMENT: "' + esc(get("DEPARTEMENT")) + '",');
-  out.push('  REGION: "' + esc(get("REGION")) + '",');
-  out.push('  HORAIRES_SEMAINE: "' + esc(get("HORAIRES_SEMAINE") || "8h - 18h") + '",');
-  out.push('  HORAIRES_SAMEDI: "' + esc(get("HORAIRES_SAMEDI") || "9h - 12h") + '",');
-  out.push('  HORAIRES_DIMANCHE: "' + esc(get("HORAIRES_DIMANCHE") || "Ferme") + '",');
-  out.push("  ANNEES_EXPERIENCE: " + anneesExperience + ",");
-  out.push("  NOMBRE_INTERVENTIONS: " + nombreInterventions + ",");
-  out.push("  NOTE_GOOGLE: " + noteGoogle + ",");
-  out.push("  NOMBRE_AVIS: " + nombreAvis + ",");
-  out.push('  TAUX_SATISFACTION: "' + tauxSatisfaction + '",');
-  out.push("  ANNEE_CREATION: " + anneeCreation + ",");
-  out.push('  SLOGAN: "' + esc(get("SLOGAN")) + '",');
-  out.push('  DESCRIPTION_ENTREPRISE: "' + esc(get("DESCRIPTION_ENTREPRISE")) + '",');
-  out.push('  META_TITLE: "' + esc(get("META_TITLE")) + '",');
-  out.push('  META_DESCRIPTION: "' + esc(get("META_DESCRIPTION")) + '",');
-  out.push('  FACEBOOK_URL: "' + esc(get("FACEBOOK_URL")) + '",');
-  out.push('  INSTAGRAM_URL: "' + esc(get("INSTAGRAM_URL")) + '",');
-  out.push('  GOOGLE_URL: "' + esc(get("GOOGLE_URL")) + '",');
-  out.push('  SIRET: "' + esc(get("SIRET")) + '",');
-  out.push('  ZONE_INTERVENTION: "' + esc(get("ZONE_INTERVENTION")) + '",');
-  out.push('  ZONE_KM: "' + esc(get("ZONE_KM") || "30") + '",');
-  out.push("} as const;");
-  out.push("");
-  out.push("export type ClientConfig = typeof clientConfig;");
+  // 2. Generate lib/data/company.ts (used by all components)
+  const dataDir = path.join(ROOT, "lib", "data");
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  const companyLines = [
+    "// Auto-generated by sync-client.ts -- DO NOT EDIT",
+    "// Edit CLIENT.md then run: npm run sync-client",
+    "",
+    "export const company = {",
+    `  name: "${esc(nom)}",`,
+    `  slogan: "${esc(slogan)}",`,
+    `  phone: "${esc(phone)}",`,
+    `  phoneRaw: "${phoneRaw}",`,
+    `  email: "${esc(email)}",`,
+    "  address: {",
+    `    street: "${esc(adresse)}",`,
+    `    city: "${esc(ville)}",`,
+    `    postalCode: "${esc(cp)}",`,
+    `    region: "${esc(region)}",`,
+    '    country: "FR",',
+    "  },",
+    "  coordinates: {",
+    `    lat: ${lat},`,
+    `    lng: ${lng},`,
+    "  },",
+    `  hours: "Lun-Ven : ${esc(get("HORAIRES_SEMAINE", "8h-18h"))} | Sam : ${esc(get("HORAIRES_SAMEDI", "9h-12h"))}",`,
+    "  hoursStructured: [",
+    '    { days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], opens: "08:00", closes: "18:00" },',
+    '    { days: ["Saturday"], opens: "09:00", closes: "12:00" },',
+    "  ],",
+    '  certifications: ["Garantie Decennale", "RGE", "Qualibat"],',
+    '  insurance: "Assurance decennale et responsabilite civile professionnelle",',
+    `  yearFounded: ${anneeCreation},`,
+    `  yearsExperience: ${anneesExp},`,
+    `  projectsCompleted: ${nbInterventions},`,
+    `  clientsSatisfied: ${nbSatisfaits},`,
+    `  googleRating: ${noteGoogle},`,
+    `  googleReviewCount: ${nbAvis},`,
+    "  socialMedia: {",
+    `    facebook: "${esc(get("FACEBOOK_URL"))}",`,
+    `    instagram: "${esc(get("INSTAGRAM_URL"))}",`,
+    `    google: "${esc(get("GOOGLE_REVIEWS_URL") || get("GOOGLE_URL"))}",`,
+    "  },",
+    `  interventionRadius: "${esc(get("ZONE_KM", "30-50"))} km",`,
+    "} as const;",
+  ];
+  fs.writeFileSync(path.join(dataDir, "company.ts"), companyLines.join("\n") + "\n", "utf-8");
+  console.log("lib/data/company.ts genere");
 
-  const dir = require("path").dirname(OUTPUT);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(OUTPUT, out.join("\n"), "utf-8");
-  console.log("client.config.ts genere -> " + OUTPUT);
+  // 3. Global search-and-replace for hardcoded template defaults
+  console.log("\nRemplacement des valeurs par defaut...");
+  const metaTitle = get("META_TITLE") || (nom + " | Macon a " + ville);
+  const metaDesc = get("META_DESCRIPTION") || get("DESCRIPTION_ENTREPRISE", "");
+  const replacements: [string, string][] = [
+    ["Maçonnerie Durand", nom],
+    ["Maconnerie Durand", nom],
+    ["maconnerie-durand.fr", nom.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".fr"],
+    ["Pierre Durand", get("PRENOM_DIRIGEANT") + " " + get("NOM_DIRIGEANT")],
+    ["04 78 00 00 00", phone],
+    ["+33478000000", phoneRaw],
+    ["contact@maconnerie-durand.fr", email],
+    ["15 Rue de la République", adresse],
+    ["69002", cp],
+    ["Auvergne-Rhône-Alpes", region],
+  ];
+
+  // City replacements (be careful with partial matches)
+  const cityReplacements: [string, string][] = [
+    ["à Lyon", "à " + ville],
+    ["a Lyon", "a " + ville],
+    ["de Lyon", "de " + ville],
+    ["Lyon et", ville + " et"],
+    ["lyonnaise", "locale"],
+    ["Sainte-Foy-lès-Lyon", ville],
+    ["Sainte-Foy-les-Lyon", ville],
+  ];
+
+  const allFiles = [
+    ...walkFiles(path.join(ROOT, "app"), [".tsx", ".ts"]),
+    ...walkFiles(path.join(ROOT, "components"), [".tsx", ".ts"]),
+    ...walkFiles(path.join(ROOT, "lib", "data"), [".ts"]),
+  ];
+
+  for (const file of allFiles) {
+    replaceInFile(file, [...replacements, ...cityReplacements]);
+  }
+
+  console.log("\nSynchronisation terminee !");
 }
 
 main();
