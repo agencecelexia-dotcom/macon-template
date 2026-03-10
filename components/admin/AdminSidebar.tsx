@@ -68,7 +68,7 @@ export function AdminSidebar({ activeTab, onTabChange }: Props) {
               }}
               className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 active
-                  ? "bg-white/15 text-accent-500"
+                  ? "bg-white/15 text-white"
                   : "text-white/70 hover:text-white hover:bg-white/5"
               }`}
             >
