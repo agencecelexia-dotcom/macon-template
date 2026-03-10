@@ -12,7 +12,8 @@ const WRITE_DIR = process.env.VERCEL
 const FILE = join(WRITE_DIR, "services.json");
 const SEED = join(process.cwd(), "storage", "services.json");
 
-function isAuthed(cookieStore: ReturnType<typeof cookies>) {
+async function isAuthed() {
+  const cookieStore = await cookies();
   return cookieStore.get("admin_auth")?.value === ADMIN_TOKEN;
 }
 
@@ -51,8 +52,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const cookieStore = cookies();
-  if (!isAuthed(cookieStore)) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+if (!(await isAuthed())) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   try {
     const body = await request.json();
     const items = readData();
@@ -66,8 +66,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const cookieStore = cookies();
-  if (!isAuthed(cookieStore)) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+if (!(await isAuthed())) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   try {
     const body = await request.json();
     const items = readData();
@@ -82,8 +81,7 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const cookieStore = cookies();
-  if (!isAuthed(cookieStore)) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+if (!(await isAuthed())) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   try {
     const { id } = await request.json();
     const items = readData();
