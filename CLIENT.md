@@ -1,45 +1,47 @@
-# Client Configuration
-# Ce fichier est lu par scripts/sync-client.ts pour générer lib/config/client.config.ts
-# Format: CLE: "valeur"
-# Les valeurs entre guillemets seront extraites automatiquement.
+# CLIENT.md — Template Macon | Agence Celexia
+# Remplis chaque champ. Laisse "" si inconnu.
+# Puis lance : npm run sync-client
 
-## Identité
-PRENOM_DIRIGEANT: "Prénom"
-NOM_DIRIGEANT: "Nom"
-NOM_ENTREPRISE: "Mon Entreprise"
-SLOGAN: "Votre artisan de confiance"
+## IDENTITÉ
+PRENOM_DIRIGEANT: "{PRENOM_DIRIGEANT}"
+NOM_DIRIGEANT: "{NOM_DIRIGEANT}"
+NOM_ENTREPRISE: "{NOM_ENTREPRISE}"
+GENRE_DIRIGEANT: "masculin"
 
-## Contact
-TELEPHONE: "01 00 00 00 00"
-TELEPHONE_RAW: "+33100000000"
-EMAIL: "contact@example.fr"
-RUE: "1 Rue Exemple"
-VILLE: "Paris"
-CODE_POSTAL: "75001"
-REGION: "Île-de-France"
+## CONTACT
+TELEPHONE: "{TELEPHONE}"
+EMAIL: "{EMAIL}"
+ADRESSE: "{ADRESSE}"
+VILLE: "{VILLE}"
+CODE_POSTAL: "{CODE_POSTAL}"
+DEPARTEMENT: "{DEPARTEMENT}"
+REGION: "{REGION}"
 
-## Coordonnées GPS
-LATITUDE: "48.8566"
-LONGITUDE: "2.3522"
+## HORAIRES
+HORAIRES_SEMAINE: "8h - 18h"
+HORAIRES_SAMEDI: "9h - 12h"
+HORAIRES_DIMANCHE: "Fermé"
 
-## Horaires
-HORAIRES_DISPLAY: "Lun-Ven : 8h-18h | Sam : 9h-12h"
-
-## Chiffres clés
+## CHIFFRES
+ANNEES_EXPERIENCE: "15"
+NOMBRE_INTERVENTIONS: "500"
+NOTE_GOOGLE: "4.8"
+NOMBRE_AVIS: "45"
+TAUX_SATISFACTION: "98"
 ANNEE_CREATION: "2010"
-PROJETS_REALISES: "200"
-CLIENTS_SATISFAITS: "180"
 
-## Avis Google
-GOOGLE_RATING: "4.8"
-GOOGLE_REVIEW_COUNT: "47"
+## SEO
+SLOGAN: "{SLOGAN}"
+DESCRIPTION_ENTREPRISE: "{DESCRIPTION_ENTREPRISE}"
+META_TITLE: "{META_TITLE}"
+META_DESCRIPTION: "{META_DESCRIPTION}"
 
-## Réseaux sociaux
-FACEBOOK: ""
-INSTAGRAM: ""
-GOOGLE_BUSINESS: ""
+## SOCIAL
+FACEBOOK_URL: ""
+INSTAGRAM_URL: ""
+GOOGLE_URL: ""
 
-## SEO / Métier
-RAYON_INTERVENTION: "30-50 km"
-CERTIFICATIONS: "Garantie Décennale, RGE, Qualibat"
-ASSURANCE: "Assurance décennale et responsabilité civile professionnelle"
+## LEGAL
+SIRET: "{SIRET}"
+ZONE_INTERVENTION: "{ZONE_INTERVENTION}"
+ZONE_KM: "30"
